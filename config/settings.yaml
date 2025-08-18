@@ -21,7 +21,6 @@ providers:
 storage:
   input_directory: "data/input"
   output_directory: "data/output"
-  organize_by_format: true
 
 # Translation settings
 translation:
