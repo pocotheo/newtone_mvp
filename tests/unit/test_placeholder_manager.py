@@ -72,23 +72,6 @@ class TestPlaceholderManager:
         restored = self.manager.restore_all(frozen, placeholders)
         assert restored == text
     
-    def test_freeze_html_tags(self):
-        """Test HTML tag freezing and restoration."""
-        text = '<div class="product">Premium handbag</div>'
-        
-        frozen, placeholders = self.manager.freeze_all(text, [])
-        
-        # HTML tags should be replaced with placeholders
-        assert '<div class="product">' not in frozen
-        assert "</div>" not in frozen
-        assert "⟦PH_" in frozen
-        
-        # Content should remain
-        assert "Premium handbag" in frozen
-        
-        # Restore should bring back original HTML
-        restored = self.manager.restore_all(frozen, placeholders)
-        assert restored == text
     
     def test_complex_text_with_multiple_patterns(self):
         """Test text with multiple patterns to freeze."""

@@ -24,7 +24,6 @@ class PlaceholderManager:
             "SKU": r"\bSKU-[A-Z0-9]+\b",
             "MARKDOWN_LINK": r"\[([^\]]+)\]\(([^)]+)\)",
             "CURRENCY": r"[$€£¥]\d+(?:\.\d{2})?",
-            "HTML_TAG": r"<[^>]+>",
         }
         self.logger = get_logger("newtone_translate")
 
