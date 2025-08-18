@@ -58,8 +58,8 @@ class PlaceholderManager:
             self.logger.info("Processing markdown links first...")
             markdown_pattern = self.rules["MARKDOWN_LINK"]
             for m in re.finditer(markdown_pattern, text):
-                link_text = m.group(1)  # The text part [Join Now]
-                url = m.group(2)        # The URL part (/join-circle)
+                link_text = m.group(1)  # The text part from [text]/(url)
+                url = m.group(2)        # The URL part
                 self.logger.info(f"Found markdown link: '{link_text}' -> '{url}'")
                 # Only replace the URL part with a placeholder
                 if url not in mapping.values():

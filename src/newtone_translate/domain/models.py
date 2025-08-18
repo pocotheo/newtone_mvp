@@ -10,7 +10,7 @@ from typing import Dict, List, Optional
 
 @dataclass
 class TranslationRequest:
-    """Request model for translation operations."""
+    """Model for translation operations."""
     
     text: str
     target_lang: str = "fr"
