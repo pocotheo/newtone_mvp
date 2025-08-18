@@ -1,0 +1,30 @@
+# Newtone Translation System Configuration
+
+app:
+  name: "Newtone Translate"
+  version: "1.0.0"
+  
+# Logging configuration
+logging:
+  level: "INFO"
+  directory: "logs"
+  
+# Provider configuration  
+providers:
+  default: "openai"
+  openai:
+    model: "gpt-4o-mini"
+    temperature: 0.2
+    max_retries: 2
+    
+# File handling
+storage:
+  input_directory: "data/input"
+  output_directory: "data/output"
+  organize_by_format: true
+
+# Translation settings
+translation:
+  default_target_language: "fr"
+  preserve_formatting: true
+  batch_size: 50
