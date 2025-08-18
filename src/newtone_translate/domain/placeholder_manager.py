@@ -23,6 +23,8 @@ class PlaceholderManager:
             "EMAIL": r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
             "SKU": r"\bSKU-[A-Z0-9]+\b",
             "MARKDOWN_LINK": r"\[([^\]]+)\]\(([^)]+)\)",
+            "CURRENCY": r"[$€£¥]\d+(?:\.\d{2})?",
+            "HTML_TAG": r"<[^>]+>",
         }
         self.logger = get_logger("newtone_translate")
 
