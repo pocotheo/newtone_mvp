@@ -7,6 +7,7 @@ Handles loading and managing application configuration.
 import os
 import json
 from typing import Dict, List
+from ..infrastructure.storage import FileStorage
 
 
 class ConfigService:
@@ -15,13 +16,14 @@ class ConfigService:
     def __init__(self):
         """Initialize configuration service."""
         self.config_dir = "config"
+        self.file_storage = FileStorage()
     
     def load_brand_config(self, brand_name: str = "default") -> Dict:
         """Load brand guidelines."""
         try:
             config_path = os.path.join(self.config_dir, "brand", brand_name, "brand_guidelines.json")
-            with open(config_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            content = self.file_storage.read_file(config_path)
+            return json.loads(content)
         except FileNotFoundError:
             return {"tone": "professional", "notes": "maintain brand voice"}
     
@@ -29,8 +31,8 @@ class ConfigService:
         """Load glossary for specific domain."""
         try:
             glossary_path = os.path.join(self.config_dir, "brand", domain, "glossary.json")
-            with open(glossary_path, "r", encoding="utf-8") as f:
-                return json.load(f)
+            content = self.file_storage.read_file(glossary_path)
+            return json.loads(content)
         except FileNotFoundError:
             return {}
     
@@ -38,8 +40,8 @@ class ConfigService:
         """Load Do Not Translate terms."""
         try:
             dnt_path = os.path.join(self.config_dir, "brand", domain, "dnt.json")
-            with open(dnt_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                return data if isinstance(data, list) else data.get("terms", [])
+            content = self.file_storage.read_file(dnt_path)
+            data = json.loads(content)
+            return data if isinstance(data, list) else data.get("terms", [])
         except FileNotFoundError:
             return []
