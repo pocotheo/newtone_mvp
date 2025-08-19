@@ -24,7 +24,7 @@ This project follows **pure layered architecture** principles:
 
 ```bash
 # Clone the repository
-git clone https://github.com/newtone/newtone-translate.git
+git clone https://github.com/pocotheo/newtone_mvp.git
 cd newtone-translate
 
 # Install dependencies
@@ -38,7 +38,7 @@ export OPENAI_API_KEY="your-api-key"
 
 ```bash
 # Translate a file
-python newtone_translate.py data/input/html/example.html fr
+python newtone_translate.py data/input/html/product.html fr
 
 # Translate text directly
 python newtone_translate.py "Hello world" es
