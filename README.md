@@ -163,6 +163,22 @@ Brand guidelines, glossaries, and DNT terms are loaded from configuration rather
 3. **Evaluation Loop**
    - Human-in-the-loop quality evaluation might be necessary for initial deployments until confidence in automation grows.
 
+## Questions for Product Discovery
+
+1. How are you currently handling translations (agencies, in-house teams, Google Translate, DeepL, etc.)?
+2. What are the main challenges or frustrations with your current process?
+3. How much time does it usually take to get content translated and published?
+4. What does “ready-to-publish” mean in your context? Do you currently need to edit AI or agency translations before publishing?
+5. Can you share examples where translation quality failed to meet your expectations?
+6. Can you share examples of good before/after translation?
+7. What is the input type?
+8. Which languages are your top priorities now?
+9. What are the brand guidelines you want to keep?
+10. What is the glossary you don't want translated?
+11. How do you want translations delivered?
+12. Do you require on-premise or private cloud deployments for data security?
+13. How many products or content items do you typically translate per month or per season?
+
 ## 📁 Project Structure
 
 ```
@@ -187,68 +203,5 @@ newtone-translate/
 - **Multiple Providers**: OpenAI, Mock (extensible to other services)
 - **Professional Architecture**: Layered design for enterprise scalability
 
-## 🔧 Configuration
 
-Configuration is managed in `config/settings.yaml`:
 
-```yaml
-providers:
-  default: "openai"
-  openai:
-    model: "gpt-4o-mini"
-    temperature: 0.2
-
-translation:
-  default_target_language: "fr"
-  preserve_formatting: true
-```
-
-Brand-specific settings in `config/brand/default/`:
-- `glossary.json` - Translation glossary
-- `brand_guidelines.json` - Style guidelines  
-- `dnt.json` - Do Not Translate terms
-
-## 🧪 Testing
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov
-
-# Run specific test category
-pytest tests/unit/
-pytest tests/integration/
-```
-
-## 📊 Architecture Benefits
-
-### Layered Architecture Advantages:
-1. **Clear Separation**: Each layer has single responsibility
-2. **Easy Testing**: Layers can be tested independently
-3. **Scalability**: Add new formats/providers without changing core logic
-4. **Maintainability**: Changes isolated to specific layers
-5. **Professional**: Industry-standard enterprise pattern
-
-### Layer Responsibilities:
-- **Presentation**: User interaction (CLI, future API)
-- **Application**: Workflow orchestration and service coordination
-- **Domain**: Pure business logic (no external dependencies)
-- **Infrastructure**: External services (OpenAI, file storage, logging)
-
-## 🚀 Development
-
-```bash
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Format code
-black src/ tests/
-
-# Type checking
-mypy src/
-
-# Linting
-flake8 src/ tests/
-```
