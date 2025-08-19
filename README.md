@@ -47,247 +47,121 @@ python newtone_translate.py "Hello world" es
 newtone-translate translate --input data/input/html/example.html --target fr
 ```
 
-## 🏗️ Major Design Decisions
 
-### **1. Multi-Brand Scalability with Brand Guidelines**
+## 🏗️ Design Decisions Overview
 
-**Decision**: Create brand guideline templates that are scalable for multiple brands.
+This section documents the major design choices made in the Newtone translation system. Each decision was evaluated against business requirements, scalability goals, and long-term maintainability of the system. The following outlines both the rationale for the choices made and why alternative approaches were not pursued.
 
-**Rationale**:
-- **Client Scalability**: System needs to handle multiple luxury fashion brands
-- **Brand Consistency**: Each brand has unique tone, voice, and terminology requirements
-- **Business Growth**: Easy onboarding of new brands without code changes
-- **Template-Based**: Standardized structure that works across different brand types
+### **1. Layered Architecture**
 
-**Implementation**:
-```
-config/brand/
-├── default/               # Default brand template
-├── Newtone/                # Newtone brand specific
-├── luxury-brand-x/       # Another brand
-└── template/             # Template for new brands
-```
+The layered architecture was chosen for its ability to separate business logic, infrastructure, and presentation layers. This enables both short-term developer productivity and long-term extensibility.
 
-**Implementation**:
-```
-┌─────────────────────────────────────────┐
-│ Presentation Layer (CLI, Future: API)   │  ← User Interfaces
-├─────────────────────────────────────────┤
-│ Application Layer (Services)            │  ← Business Workflows  
-├─────────────────────────────────────────┤
-│ Domain Layer (Business Logic)           │  ← Core Business Rules
-├─────────────────────────────────────────┤
-│ Infrastructure (Providers, Storage)     │  ← External Services
-└─────────────────────────────────────────┘
-```
+**Primary Drivers**
 
-### **2. Brand Glossary System**
+- **Business domain complexity**: Multi-brand support, format preservation, and brand consistency rules require clear isolation of business logic.
+- **Enterprise scalability**: New translation providers can be integrated without changing business logic.
+- **Flexible interfaces**: Currently exposes a CLI, but future Web UI and REST API layers can be added without rewriting core translation logic.
 
-**Decision**: Include comprehensive Brand Glossary for consistent terminology translation.
+**Rejected Alternatives**
 
-**Rationale**:
-- **Brand Voice Consistency**: Each luxury brand has specific terminology that must be translated consistently
-- **Quality Control**: Prevent AI from making inconsistent translation choices for key brand terms
-- **Business Requirements**: Luxury fashion has specialized vocabulary that requires precise translation
-- **Scalable Management**: Glossaries can be updated by business users without code changes
+- **Microservices**: Too complex for MVP, unnecessary operational overhead.
+- **Event-driven**: Translation is request-response, not asynchronous.
+- **Monolithic script**: Initial prototype evolved beyond a single function into structured layers.
 
-**Implementation**:
-```json
-{
-  "luxury": "luxe",
-  "handbag": "sac à main", 
-  "craftsmanship": "savoir-faire",
-  "premium": "haut de gamme",
-  "timeless": "intemporel"
-}
-```
+### **2. Freeze–Restore Pattern for Critical Content**
 
-### **6. Smart Content Protection System**
+**Decision**
+Implement a "freeze–restore" mechanism that protects specific placeholders, tags, and metadata from being translated.
 
-**Decision**: Protect specific content types from translation using placeholder system.
+**Rationale**
 
-**Rationale**:
-- **Technical Element Protection**: Prevent translation of HTML tags, attributes, and technical markup
-- **Brand Asset Protection**: Preserve URLs, email addresses, phone numbers, and brand-specific codes
-- **Price and SKU Protection**: Keep pricing, model numbers, and product codes in original language
-- **Link Functionality**: Ensure links continue to work after translation
+- Prevents corruption of HTML tags, brand names, SKUs, and DNT (Do Not Translate) terms.
+- Allows translators and providers to work with clean text without losing contextual markers.
+- Guarantees reliable restoration after translation.
 
-**Protected Content Types**:
-- HTML tags and attributes (`<div class="product">`)
-- URLs and email addresses (`https://...`, `info@brand.com`)
-- Prices and currency (`$299.99`, `€250.00`)
-- Brand-specific terms (from DNT list)
-- Technical codes and SKUs
+### **3. Format Detection Beyond File Extensions**
 
-**Process**:
-1. **Freeze**: Replace protected content with placeholders `⟦PH_1⟧`
-2. **Translate**: Send only translatable text to AI
-3. **Restore**: Put original protected content back exactly as it was
+**Decision**
+Content format is detected based on actual file content, not file extension.
 
-### **3. HTML DOM Parsing Strategy**
+**Rationale**
 
-**Decision**: Parse HTML into DOM structure rather than treating it as plain text.
+- Users often mislabel files (e.g., .txt containing HTML).
+- Ensures correct pipeline selection regardless of extension.
+- Improves reliability and reduces errors in automated workflows.
 
-**Rationale**:
-- **Prevent HTML Translation**: Don't want the translator to translate `<div>`, `<head>`, `<a>` tags, or other HTML elements
-- **Structure Preservation**: Maintain exact HTML structure while translating only text content
-- **Link Protection**: Preserve URLs and href attributes exactly as they are
-- **Context Awareness**: Extract text segments but keep them in logical context for better AI translation
-- **Clean Separation**: Clear distinction between markup and translatable content
+### **4. Specialized Pipelines for Different Content Types**
 
-**Why This Matters**:
-- AI translators will try to translate everything, including HTML tags and attributes
-- Links and technical elements must remain functional across languages
-- DOM parsing ensures only human-readable text gets translated
+**Decision**
+Translation processing pipelines vary between HTML and Markdown/Text.
 
-**Process**:
-1. **Parse**: Convert HTML to DOM structure using BeautifulSoup
-2. **Extract**: Pull out text segments while preserving DOM relationships
-3. **Translate**: Send only text content to AI, maintaining context
-4. **Reconstruct**: Put translated text back into original DOM structure
+**HTML Processing**
 
-### **4. Context-Aware Translation Strategy**
+- **DOM-aware**: Preserves full structure.
+- **Segment extraction**: Each text node becomes a separate segment.
+- **Context preservation**: Parent-child relationships maintained.
+- **Fragment vs Document**: Works with both snippets and full documents.
 
-**Decision**: Maintain context during translation rather than breaking text into isolated fragments.
+**Markdown/Text Processing**
 
-**Rationale**:
-- **AI Context Dependency**: AI translation models rely heavily on context for accurate translation
-- **Coherent Translation**: Breaking text into too-small pieces loses semantic meaning
-- **Natural Flow**: Sentences and paragraphs should flow naturally in the target language
-- **Quality Priority**: Better to translate larger chunks with context than perfect technical isolation
+- **Single segment**: Treated as one unit for coherence.
+- **Simpler pipeline**: Minimal structural preservation needed.
+- **Faster processing**: Lower API call volume.
 
-**Implementation Approach**:
-- **Logical Segmentation**: Break content at natural boundaries (paragraphs, sections)
-- **Context Preservation**: Keep related text together during translation
-- **Smart Reconstruction**: Put translated context back into original structure
-- **Format-Specific Logic**: Different strategies for HTML vs Markdown vs plain text
+### **5. Keeping Related Content Together for Context**
 
-**Why Context Matters**:
-```html
-<!-- Bad: Fragmented translation -->
-<p>Experience the finest</p> → "Vivez le plus fin"
-<strong>craftsmanship</strong> → "savoir-faire"
+**Decision**
+Wherever possible, related content (e.g., sentences in the same paragraph, glossary references) is grouped and translated together.
 
-<!-- Good: Contextual translation -->
-<p>Experience the finest <strong>craftsmanship</strong></p> 
-→ <p>Découvrez le plus fin <strong>savoir-faire</strong></p>
-```
+**Rationale**
 
-### **5. Format Detection and Validation**
+- Large Language Models perform better when given full context.
+- Improves consistency across segments.
+- Reduces risk of semantic drift when content is split unnecessarily.
 
-**Decision**: Check and validate format in `.txt` and other file types for proper handling.
+### **6. Multi-Brand Strategy Through Configuration**
 
-**Rationale**:
-- **Content Classification**: Automatically detect whether content is HTML, Markdown, or plain text
-- **Processing Pipeline**: Route content to appropriate parsing strategy based on actual format
-- **Error Prevention**: Avoid treating HTML as plain text or vice versa
-- **User Experience**: Handle mixed or ambiguous content gracefully
+**Decision**
+Brand guidelines, glossaries, and DNT terms are loaded from configuration rather than code.
 
-**Detection Logic**:
-```python
-def detect_format(self, text: str) -> str:
-    """Detect format with priority: Markdown > HTML > Text."""
-    if self._is_markdown_text(text):
-        return "markdown"
-    elif self._is_html_text(text):
-        return "html" 
-    else:
-        return "text"
-```
+**Rationale**
 
-**Why This Matters**:
-- Files might have wrong extensions (`.txt` file containing HTML)
-- Content might be mixed format
-- Different formats need completely different processing approaches
+- Supports multi-brand scalability without code changes.
+- New brands can be onboarded by providing configuration files.
+- Maintains strict adherence to each brand's style guide and terminology.
 
-### **7. Layered Architecture for Enterprise Scalability**
+## Feasibility Assessment
 
-**Decision**: Implement clean layered architecture with strict dependency rules.
+1. **Technical Feasibility**
 
-**Rationale**:
-- **Multiple Brand Support**: Architecture needs to scale for multiple luxury fashion brands
-- **Business Logic Isolation**: Translation rules and brand guidelines are business logic, separate from technical concerns
-- **Testing and Quality**: Each layer can be tested independently
-- **Future Growth**: Easy to add new interfaces (Web UI, API) without changing core logic
+   - **Core capability**: Current LLMs (e.g., GPT-4, Claude, DeepL’s API) can produce natural-sounding translations that are often close to human quality. This suggests the translation engine is technically viable.
+   - **Format handling**: HTML and Markdown preservation is feasible using a freeze–restore approach (protect tags, placeholders, etc.) which I implemented in the MVP.
+   - **Multi-brand consistency**: Achievable through configuration-driven glossaries, style guides, and DNT (Do Not Translate) terms. Requires careful prompt-engineering or fine-tuning.
+   - **Pipeline scalability**: The layered architecture allows adding new providers or scaling to different interfaces (CLI now, REST API/Web UI later).
 
-**Architecture Layers**:
-```
-┌─────────────────────────────────────────┐
-│ Presentation (CLI, Future: Web UI)      │  ← User Interfaces
-├─────────────────────────────────────────┤
-│ Application (Translation Workflows)     │  ← Business Workflows  
-├─────────────────────────────────────────┤
-│ Domain (Brand Rules, Content Logic)     │  ← Core Business Rules
-├─────────────────────────────────────────┤
-│ Infrastructure (AI Providers, Storage)  │  ← External Services
-└─────────────────────────────────────────┘
-```
+2. **Business Feasibility**
 
-### **8. Comprehensive Testing Strategy**
+   - **Market fit**: Luxury fashion retailers have strong need for consistent, high-quality translations with brand fidelity. AI-based translation products already exist, but differentiation lies in ready-to-publish quality and brand customization.
+   - **Client willingness**: Early discovery shows clients are already paying high translation costs, indicating clear budget and willingness to switch if quality is sufficient.
 
-**Decision**: Multi-layer testing with realistic fixtures and scenarios.
+3. **Operational Feasibility**
 
-**Rationale**:
-- **Quality Assurance**: Catch issues early in development
-- **Regression Prevention**: Ensure changes don't break existing functionality
-- **Documentation**: Tests serve as living documentation of expected behavior
-- **Confidence**: Enable safe refactoring and feature additions
+   - **Latency**: LLM-based translations can be slower than traditional MT engines (e.g., Google Translate), but for luxury fashion, quality is more important than speed. Acceptable if processing can be batched or parallelized.
+   - **Costs**: Translation via LLM APIs can be expensive depending on content length and volume. Strategies like batching requests, caching, or selectively using premium providers may help.
+   - **Data handling**: Some clients may require strict data security (fashion houses are sensitive to IP leaks). This may necessitate on-prem models or private endpoints in the future.
 
-**Testing Layers**:
-- **Unit Tests**: Individual component testing with mocks
-- **Integration Tests**: Cross-layer workflow testing
-- **Fixture-Based**: Realistic luxury fashion content for testing
-- **Mock Providers**: Testing without external API dependencies
+---
 
-### **8. Error Handling and Observability**
+**Potential Complications**
 
-**Decision**: Comprehensive logging and graceful error handling.
-
-**Rationale**:
-- **Production Readiness**: Handle real-world failure scenarios
-- **Debugging Support**: Detailed logs for troubleshooting
-- **User Experience**: Graceful degradation when services unavailable
-- **Monitoring**: Observable system behavior in production
-
-**Implementation**:
-- Structured logging with business context
-- Fallback to mock provider when OpenAI unavailable
-- Detailed error messages with actionable guidance
-- Usage tracking and performance metrics
-
-### **9. Modern Python Development Practices**
-
-**Decision**: Use modern Python tooling and type safety.
-
-**Rationale**:
-- **Developer Experience**: Better IDE support and error catching
-- **Code Quality**: Type hints improve code documentation and reliability
-- **Maintainability**: Modern packaging and dependency management
-- **Professional Standards**: Industry best practices for Python development
-
-**Tools & Practices**:
-- `pyproject.toml` for modern Python packaging
-- Type hints throughout codebase (`py.typed` marker)
-- Dataclasses for clean, immutable data models
-- Context managers for resource management
-- Dependency injection for testability
-
-### **10. Extensibility and Future-Proofing**
-
-**Decision**: Design for easy extension and modification.
-
-**Rationale**:
-- **Business Growth**: System can evolve with business needs
-- **Technology Changes**: Easy to adopt new translation technologies
-- **Feature Additions**: New capabilities can be added without major refactoring
-- **Integration Readiness**: Architecture supports future API, web UI, or microservice deployment
-
-**Extension Points**:
-- New translation providers
-- Additional content formats (PDF, DOCX, etc.)
-- Different user interfaces (Web UI, API)
-- Additional languages and locales
-- Custom business rules and workflows
+1. **Quality Assurance**
+   - LLM translations sometimes “hallucinate” or over-interpret content.
+   - Brand-specific tone may be inconsistent without ongoing glossary/style enforcement.
+2. **Format Preservation**
+   - Edge cases in HTML/Markdown (nested tags, broken markup) could cause incorrect freezing/restoring.
+   - Continuous testing required.
+3. **Evaluation Loop**
+   - Human-in-the-loop quality evaluation might be necessary for initial deployments until confidence in automation grows.
 
 ## 📁 Project Structure
 
